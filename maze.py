@@ -104,7 +104,7 @@ class Maze:
         for i in bl:
             if self.in_bounds(i) and self.block_free(i):
                 n += 1
-        return n <= 1 or random() < 0.05
+        return n <= 1 or random() < self.__loop_prob
 
     def walled_neigbour_blocks(self, coord):
         x, y = coord[0], coord[1]
@@ -147,7 +147,8 @@ class Maze:
 
         self.stats()
 
-    def generate(self, deep=True, pause = 0):
+    def generate(self, deep=True, pause = 0, loop_prob = 0.05):
+        self.__loop_prob = loop_prob
         x, y = self.__x, self.__y
         ends = self.walled_neigbour_blocks((x, y))
         while ends:
