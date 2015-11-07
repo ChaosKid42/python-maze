@@ -42,8 +42,9 @@ class Maze:
         self.__height = height
         self.__maze = [['w' for x in range(height)] for x in range(width)]
         self.__walls = height*width - 1
-        self.__ends = 0
+        self.__moves = 0
         self.__stdscr = stdscr
+        self.__pause = 0
         self.__direction = 'N'
         self.__x, self.__y = randrange(self.__width), randrange(self.__height)
 
@@ -121,6 +122,11 @@ class Maze:
         stdscr.addstr(y+1, x+1, self.__dirToChar[self.__direction],
             self.__btToColor[self.__maze[x][y]])
 
+        if self.__pause > 0:
+            self.__stdscr.refresh()
+            sleep(self.__pause)
+
+
     def undraw_player(self):
         x, y = self.__x, self.__y
         stdscr.addstr(y+1, x+1, ' ',
@@ -141,18 +147,19 @@ class Maze:
                 self.__visited2 += 1
             self.undraw_player()
             self.__x, self.__y = nx, ny
+            self.__moves += 1
             self.draw_player()
         else:
             self.__bumps += 1
+            curses.beep()
 
         self.stats()
 
-    def generate(self, deep=True, pause = 0, loop_prob = 0.05):
+    def generate(self, deep=True, loop_prob = 0.05):
         self.__loop_prob = loop_prob
         x, y = self.__x, self.__y
         ends = self.walled_neigbour_blocks((x, y))
         while ends:
-            self.__ends = len(ends)
             if deep:
                 x, y = ends.pop()
             else:
@@ -163,11 +170,12 @@ class Maze:
                 self.__unvisited += 1
                 self.stats()
                 ends += self.walled_neigbour_blocks((x, y))
-                if pause > 0:
+                if self.__pause > 0:
                     stdscr.refresh()
-                    sleep(pause)
+                    sleep(self.__pause)
         self.__ends = 0
         self.stats()
+
 
     def stats(self):
         x = self.__width + 2
@@ -184,9 +192,33 @@ class Maze:
         stdscr.addstr(15, x, "{:9}".format(self.__visited2))
         stdscr.addstr(17, x, 'Bumps')
         stdscr.addstr(18, x, "{:9}".format(self.__bumps))
-        stdscr.addstr(20, x, 'Ends')
-        stdscr.addstr(21, x, "{:9}".format(self.__ends))
+        stdscr.addstr(20, x, 'Moves')
+        stdscr.addstr(21, x, "{:9}".format(self.__moves))
+        stdscr.refresh()
 
+    def unvisited(self):
+        return self.__unvisited
+
+    def setPause(self, pause):
+        self.__pause = pause
+
+    def freeDir(self):
+        x, y = self.__x, self.__y
+        nx = x + self.__dirToDelta[self.__direction][0]
+        ny = y + self.__dirToDelta[self.__direction][1]
+
+        return self.in_bounds((nx, ny)) and self.block_free((nx, ny))
+
+
+def maze_random_algo(m, blind = True):
+    while m.unvisited() > 0:
+        for i in range(randrange(4)):
+            if random() > 0.5:
+                m.turnLeft()
+            else:
+                m.turnRight()
+        if blind or m.freeDir():
+            m.move()
 
 def main(stdscr):
     stdscr.clear()
@@ -196,7 +228,15 @@ def main(stdscr):
     curses.init_pair(2, curses.COLOR_WHITE, curses.COLOR_GREEN)
     curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_BLUE)
     m = Maze(curses.COLS-12, curses.LINES-2, stdscr)
-    m.generate(True, 0.001)
+
+
+    m.setPause(0.001)
+    m.generate(True)
+
+    m.setPause(0.1)
+    maze_random_algo(m, False)
+
+    m.setPause(0)
 
     stdscr.refresh()
     key=''
