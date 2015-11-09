@@ -202,12 +202,32 @@ class Maze:
     def setPause(self, pause):
         self.__pause = pause
 
-    def freeDir(self):
+    def frontFree(self):
         x, y = self.__x, self.__y
         nx = x + self.__dirToDelta[self.__direction][0]
         ny = y + self.__dirToDelta[self.__direction][1]
 
         return self.in_bounds((nx, ny)) and self.block_free((nx, ny))
+
+    def frontUnVisited(self):
+        x, y = self.__x, self.__y
+        nx = x + self.__dirToDelta[self.__direction][0]
+        ny = y + self.__dirToDelta[self.__direction][1]
+
+        return self.__maze[nx][ny] == 'e'
+
+    def frontOnceVisited(self):
+        x, y = self.__x, self.__y
+        nx = x + self.__dirToDelta[self.__direction][0]
+        ny = y + self.__dirToDelta[self.__direction][1]
+
+        return self.__maze[nx][ny] == 'v'
+
+    def markTwiceVisited(self):
+        x, y = self.__x, self.__y
+        self.__maze[x][y] = '2'
+        self.__visited2 += 1
+        self.draw_player()
 
 
 def maze_random_algo(m, blind = True):
@@ -217,8 +237,105 @@ def maze_random_algo(m, blind = True):
                 m.turnLeft()
             else:
                 m.turnRight()
-        if blind or m.freeDir():
+        if blind or m.frontFree():
             m.move()
+
+def maze_tremaux_algo(m):
+    def step(i):
+        if i == 1:
+            m.turnRight()
+            m.turnRight()
+        else:
+            m.turnLeft()
+
+    def findUnVistedDir():
+        for i in range(3):
+            if m.frontFree() and m.frontUnVisited():
+                return True
+            step(i)
+        return False
+
+    def findOnceVistedDir():
+        for i in range(3):
+            if m.frontFree() and m.frontOnceVisited():
+                return True
+            step(i)
+        return False
+
+    def findOnlyDir():
+        n = 0
+        for i in range(3):
+            if m.frontFree():
+                n += 1
+            step(i)
+        if n != 1:
+            return False
+
+        for i in range(3):
+            if m.frontFree():
+                return True
+            step(i)
+
+    def goDeep():
+        while findUnVistedDir():
+            m.move()
+
+    def turnAround():
+        m.turnLeft()
+        m.turnLeft()
+        m.markTwiceVisited()
+
+    def goBack():
+        while True:
+            if findUnVistedDir():
+                return True
+            if findOnceVistedDir():
+                m.move()
+            elif findOnlyDir():
+                m.move()
+            else:
+                return False
+    while True:
+        goDeep()
+        turnAround()
+        if not goBack():
+            m.turnRight()
+            if m.frontFree():
+                m.move()
+                if not goBack():
+                    break
+            else:
+                break
+
+def maze_backtrack_algo_rec(m):
+
+    def step(i):
+        if i == 0:
+            m.turnLeft()
+        elif i == 1:
+            m.turnRight()
+            m.turnRight()
+        elif i == 2:
+            m.turnRight()
+
+    m.move()
+    for i in range(3):
+        if m.frontFree() and m.frontUnVisited():
+            maze_backtrack_algo_rec(m)
+        step(i)
+
+    m.move()
+    m.turnLeft()
+    m.turnLeft()
+
+
+def maze_backtrack_algo(m):
+    for i in range(4):
+        if m.frontFree():
+            maze_backtrack_algo_rec(m)
+        m.turnLeft()
+
+
 
 def main(stdscr):
     stdscr.clear()
@@ -229,14 +346,8 @@ def main(stdscr):
     curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_BLUE)
     m = Maze(curses.COLS-12, curses.LINES-2, stdscr)
 
-
+    m.generate(False)
     m.setPause(0.001)
-    m.generate(True)
-
-    m.setPause(0.1)
-    maze_random_algo(m, False)
-
-    m.setPause(0)
 
     stdscr.refresh()
     key=''
@@ -251,7 +362,9 @@ def main(stdscr):
         if key == 'KEY_UP':
             m.move()
             continue
-
+        if key == 'g':
+            maze_backtrack_algo(m)
+            continue
 
 stdscr = curses.initscr()
 curses.wrapper(main)
