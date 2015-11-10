@@ -69,13 +69,21 @@ class Maze:
     def height(self):
         return self.__height
 
+    def turn(self, n = 1):
+        n %= 4
+        if n == 3:
+            self.__direction = self.__leftDirection[self.__direction]
+            self.draw_player()
+        else:
+            for i in range(n):
+                self.__direction = self.__rightDirection[self.__direction]
+                self.draw_player()
+
     def turnLeft(self):
-        self.__direction = self.__leftDirection[self.__direction]
-        self.draw_player()
+        self.turn(-1)
 
     def turnRight(self):
-        self.__direction = self.__rightDirection[self.__direction]
-        self.draw_player()
+        self.turn()
 
     def free_block(self, x, y):
         stdscr = self.__stdscr
@@ -307,35 +315,39 @@ def maze_tremaux_algo(m):
             else:
                 break
 
-def maze_backtrack_algo_rec(m):
+def maze_backtrack_algo_rec(m, first=True):
 
-    def step(i):
-        if i == 0:
-            m.turnLeft()
-        elif i == 1:
-            m.turnRight()
-            m.turnRight()
-        elif i == 2:
-            m.turnRight()
+    if first:
+        n = 4
+    else:
+        n = 3
 
-    m.move()
-    for i in range(3):
+    for i in range(n):
+        m.turn(i)
         if m.frontFree() and m.frontUnVisited():
-            maze_backtrack_algo_rec(m)
-        step(i)
+            m.move()
+            maze_backtrack_algo_rec(m, False)
 
-    m.move()
-    m.turnLeft()
-    m.turnLeft()
+    if not first:
+        m.turn(-1)
+        m.move()
+        m.turn(2)
 
-
-def maze_backtrack_algo(m):
-    for i in range(4):
-        if m.frontFree():
-            maze_backtrack_algo_rec(m)
-        m.turnLeft()
-
-
+def maze_backtrack_algo_it(m):
+    stack = [[3, 2, 1, 0]]
+    while stack:
+        job = stack.pop()
+        if job:
+            i = job.pop()
+            stack.append(job)
+            m.turn(i)
+            if m.frontFree() and m.frontUnVisited():
+                m.move()
+                stack.append([2, 1, 0])
+        elif stack:
+            m.turn(-1)
+            m.move()
+            m.turn(2)
 
 def main(stdscr):
     stdscr.clear()
@@ -346,8 +358,8 @@ def main(stdscr):
     curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_BLUE)
     m = Maze(curses.COLS-12, curses.LINES-2, stdscr)
 
-    m.generate(False)
-    m.setPause(0.001)
+    m.generate(False, 0)
+    m.setPause(0.0001)
 
     stdscr.refresh()
     key=''
@@ -362,9 +374,16 @@ def main(stdscr):
         if key == 'KEY_UP':
             m.move()
             continue
-        if key == 'g':
-            maze_backtrack_algo(m)
+        if key == 'i':
+            maze_backtrack_algo_it(m)
             continue
+        if key == 'r':
+            maze_backtrack_algo_rec(m)
+            continue
+        if key == 't':
+            maze_tremaux_algo(m)
+            continue
+
 
 stdscr = curses.initscr()
 curses.wrapper(main)
