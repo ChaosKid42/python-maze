@@ -1,94 +1,52 @@
-#!/usr/bin/python
-
 from random import randrange, shuffle, random
 from time import sleep
-import curses
-import sys
 
 class Maze:
-
-    __directions = ('N', 'E', 'S', 'W')
-
-    __leftDirection = {
-        'N': 'W',
-        'E': 'N',
-        'S': 'E',
-        'W': 'S',
-    }
-
-    __rightDirection = {
-        'N': 'E',
-        'E': 'S',
-        'S': 'W',
-        'W': 'N',
-    }
-
-    __dirToChar = {
-        'N': '^',
-        'E': '>',
-        'S': '.',
-        'W': '<',
-    }
-
     __dirToDelta = {
-        'N': ( 0, -1),
-        'E': ( 1,  0),
-        'S': ( 0,  1),
-        'W': (-1,  0),
+        0: ( 0, -1),
+        1: ( 1,  0),
+        2: ( 0,  1),
+        3: (-1,  0),
     }
 
-    def __init__(self, width, height, stdscr):
+    __btToVisited = {
+        'w': 0,
+        'e': 0,
+        'v': 1,
+        '2': 2,
+    }
+
+    def __init__(self, screen):
+        width = screen.width()
+        height = screen.height()
+        self.__screen = screen
         self.__width = width
         self.__height = height
         self.__maze = [['w' for x in range(height)] for x in range(width)]
         self.__walls = height*width - 1
         self.__moves = 0
-        self.__stdscr = stdscr
         self.__pause = 0
-        self.__direction = 'N'
+        self.__direction = 0
         self.__x, self.__y = randrange(self.__width), randrange(self.__height)
 
-        self.__btToColor = {
-            'w': curses.color_pair(0),
-            'e': curses.color_pair(1),
-            'v': curses.color_pair(2),
-            '2': curses.color_pair(3),
-        }
         self.__maze[self.__x][self.__y] = 'v'
+        self.__screen.draw_player(self.__x, self.__y, self.__direction, 1)
         self.__visited = 1
         self.__visited2 = 0
         self.__unvisited = 0
         self.__bumps = 0
         self.draw_player()
-        self.stats()
-
-
-    def width(self):
-        return self.__width
-
-    def height(self):
-        return self.__height
+        self.draw_stats()
 
     def turn(self, n = 1):
-        n %= 4
-        if n == 3:
-            self.__direction = self.__leftDirection[self.__direction]
-            self.draw_player()
-        else:
-            for i in range(n):
-                self.__direction = self.__rightDirection[self.__direction]
-                self.draw_player()
-
-    def turnLeft(self):
-        self.turn(-1)
-
-    def turnRight(self):
-        self.turn()
+        self.__direction += n
+        self.__direction %= 4
+        self.draw_player()
+        self.__screen.play_turn_sound()
 
     def free_block(self, x, y):
-        stdscr = self.__stdscr
         self.__maze[x][y] = 'e'
-        stdscr.addstr(y+1, x+1, ' ', self.__btToColor['e'])
+        self.__screen.draw_empty(x, y, self.__btToVisited[self.__maze[x][y]])
 
     def in_bounds(self, coord):
         x, y = coord[0], coord[1]
@@ -125,20 +83,27 @@ class Maze:
                 rbl.append(i)
         return rbl
 
+    def draw_stats(self):
+        screen = self.__screen
+        screen.draw_walls_stats(self.__walls)
+        screen.draw_unvisited_stats(self.__unvisited)
+        screen.draw_visited_stats(self.__visited)
+        screen.draw_visited2_stats(self.__visited2)
+        screen.draw_bumps_stats(self.__bumps)
+        screen.draw_moves_stats(self.__moves)
+
     def draw_player(self):
         x, y = self.__x, self.__y
-        stdscr.addstr(y+1, x+1, self.__dirToChar[self.__direction],
-            self.__btToColor[self.__maze[x][y]])
+        self.__screen.draw_player(x, y, self.__direction,
+            self.__btToVisited[self.__maze[x][y]])
 
         if self.__pause > 0:
-            self.__stdscr.refresh()
+            self.__screen.refresh()
             sleep(self.__pause)
-
 
     def undraw_player(self):
         x, y = self.__x, self.__y
-        stdscr.addstr(y+1, x+1, ' ',
-            self.__btToColor[self.__maze[x][y]])
+        self.__screen.draw_empty(x, y, self.__btToVisited[self.__maze[x][y]])
 
     def move(self):
         x, y = self.__x, self.__y
@@ -157,11 +122,12 @@ class Maze:
             self.__x, self.__y = nx, ny
             self.__moves += 1
             self.draw_player()
+            self.__screen.play_move_sound()
         else:
             self.__bumps += 1
-            curses.beep()
+            self.__screen.play_bump_sound()
 
-        self.stats()
+        self.draw_stats()
 
     def generate(self, deep=True, loop_prob = 0.05):
         self.__loop_prob = loop_prob
@@ -176,33 +142,13 @@ class Maze:
                 self.free_block(x, y)
                 self.__walls -= 1
                 self.__unvisited += 1
-                self.stats()
+                self.draw_stats()
                 ends += self.walled_neigbour_blocks((x, y))
                 if self.__pause > 0:
-                    stdscr.refresh()
+                    self.__screen.refresh()
                     sleep(self.__pause)
         self.__ends = 0
-        self.stats()
-
-
-    def stats(self):
-        x = self.__width + 2
-        stdscr.addstr(0, x, 'Maze')
-        stdscr.addstr(2, x, 'Dimension')
-        stdscr.addstr(3, x, " {} x {}".format(self.__width, self.__height))
-        stdscr.addstr(5, x, 'Walls')
-        stdscr.addstr(6, x, "{:9}".format(self.__walls))
-        stdscr.addstr(8, x, 'Unvisited')
-        stdscr.addstr(9, x, "{:9}".format(self.__unvisited))
-        stdscr.addstr(11, x, 'Visited')
-        stdscr.addstr(12, x, "{:9}".format(self.__visited))
-        stdscr.addstr(14, x, '2nd Vis.')
-        stdscr.addstr(15, x, "{:9}".format(self.__visited2))
-        stdscr.addstr(17, x, 'Bumps')
-        stdscr.addstr(18, x, "{:9}".format(self.__bumps))
-        stdscr.addstr(20, x, 'Moves')
-        stdscr.addstr(21, x, "{:9}".format(self.__moves))
-        stdscr.refresh()
+        self.draw_stats()
 
     def unvisited(self):
         return self.__unvisited
@@ -236,154 +182,3 @@ class Maze:
         self.__maze[x][y] = '2'
         self.__visited2 += 1
         self.draw_player()
-
-
-def maze_random_algo(m, blind = True):
-    while m.unvisited() > 0:
-        for i in range(randrange(4)):
-            if random() > 0.5:
-                m.turnLeft()
-            else:
-                m.turnRight()
-        if blind or m.frontFree():
-            m.move()
-
-def maze_tremaux_algo(m):
-    def step(i):
-        if i == 1:
-            m.turnRight()
-            m.turnRight()
-        else:
-            m.turnLeft()
-
-    def findUnVistedDir():
-        for i in range(3):
-            if m.frontFree() and m.frontUnVisited():
-                return True
-            step(i)
-        return False
-
-    def findOnceVistedDir():
-        for i in range(3):
-            if m.frontFree() and m.frontOnceVisited():
-                return True
-            step(i)
-        return False
-
-    def findOnlyDir():
-        n = 0
-        for i in range(3):
-            if m.frontFree():
-                n += 1
-            step(i)
-        if n != 1:
-            return False
-
-        for i in range(3):
-            if m.frontFree():
-                return True
-            step(i)
-
-    def goDeep():
-        while findUnVistedDir():
-            m.move()
-
-    def turnAround():
-        m.turnLeft()
-        m.turnLeft()
-        m.markTwiceVisited()
-
-    def goBack():
-        while True:
-            if findUnVistedDir():
-                return True
-            if findOnceVistedDir():
-                m.move()
-            elif findOnlyDir():
-                m.move()
-            else:
-                return False
-    while True:
-        goDeep()
-        turnAround()
-        if not goBack():
-            m.turnRight()
-            if m.frontFree():
-                m.move()
-                if not goBack():
-                    break
-            else:
-                break
-
-def maze_backtrack_algo_rec(m, first=True):
-
-    if first:
-        n = 4
-    else:
-        n = 3
-
-    for i in range(n):
-        m.turn(i)
-        if m.frontFree() and m.frontUnVisited():
-            m.move()
-            maze_backtrack_algo_rec(m, False)
-
-    if not first:
-        m.turn(-1)
-        m.move()
-        m.turn(2)
-
-def maze_backtrack_algo_it(m):
-    stack = [[3, 2, 1, 0]]
-    while stack:
-        job = stack.pop()
-        if job:
-            i = job.pop()
-            stack.append(job)
-            m.turn(i)
-            if m.frontFree() and m.frontUnVisited():
-                m.move()
-                stack.append([2, 1, 0])
-        elif stack:
-            m.turn(-1)
-            m.move()
-            m.turn(2)
-
-def main(stdscr):
-    stdscr.clear()
-    stdscr.keypad(True)
-    curses.curs_set(False)
-    curses.init_pair(1, curses.COLOR_BLACK, curses.COLOR_WHITE)
-    curses.init_pair(2, curses.COLOR_WHITE, curses.COLOR_GREEN)
-    curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_BLUE)
-    m = Maze(curses.COLS-12, curses.LINES-2, stdscr)
-
-    m.generate(False, 0)
-    m.setPause(0.0001)
-
-    stdscr.refresh()
-    key=''
-    while key != 'q':
-        key = stdscr.getkey()
-        if key == 'KEY_LEFT':
-            m.turnLeft()
-            continue
-        if key == 'KEY_RIGHT':
-            m.turnRight()
-            continue
-        if key == 'KEY_UP':
-            m.move()
-            continue
-        if key == 'i':
-            maze_backtrack_algo_it(m)
-            continue
-        if key == 'r':
-            maze_backtrack_algo_rec(m)
-            continue
-        if key == 't':
-            maze_tremaux_algo(m)
-            continue
-
-
-stdscr = curses.initscr()
-curses.wrapper(main)
