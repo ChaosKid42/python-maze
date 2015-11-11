@@ -9,27 +9,20 @@ class Maze:
         3: (-1,  0),
     }
 
-    __btToVisited = {
-        'w': 0,
-        'e': 0,
-        'v': 1,
-        '2': 2,
-    }
-
     def __init__(self, screen):
         width = screen.width()
         height = screen.height()
         self.__screen = screen
         self.__width = width
         self.__height = height
-        self.__maze = [['w' for x in range(height)] for x in range(width)]
+        self.__maze = [[-1 for x in range(height)] for x in range(width)]
         self.__walls = height*width - 1
         self.__moves = 0
         self.__pause = 0
         self.__direction = 0
         self.__x, self.__y = randrange(self.__width), randrange(self.__height)
 
-        self.__maze[self.__x][self.__y] = 'v'
+        self.__maze[self.__x][self.__y] = 1
         self.__screen.draw_player(self.__x, self.__y, self.__direction, 1)
         self.__visited = 1
         self.__visited2 = 0
@@ -45,8 +38,8 @@ class Maze:
         self.__screen.play_turn_sound()
 
     def free_block(self, x, y):
-        self.__maze[x][y] = 'e'
-        self.__screen.draw_empty(x, y, self.__btToVisited[self.__maze[x][y]])
+        self.__maze[x][y] = 0
+        self.__screen.draw_empty(x, y, self.__maze[x][y])
 
     def in_bounds(self, coord):
         x, y = coord[0], coord[1]
@@ -55,11 +48,11 @@ class Maze:
 
     def block_free(self, coord):
         x, y = coord[0], coord[1]
-        return self.__maze[x][y] != 'w'
+        return self.__maze[x][y] != -1
 
     def visited(self, coord):
         x, y = coord[0], coord[1]
-        return self.__maze[x][y] in ('v', '2')
+        return self.__maze[x][y] > 0
 
     def block_removeable(self, coord):
         if self.block_free(coord):
@@ -94,8 +87,7 @@ class Maze:
 
     def draw_player(self):
         x, y = self.__x, self.__y
-        self.__screen.draw_player(x, y, self.__direction,
-            self.__btToVisited[self.__maze[x][y]])
+        self.__screen.draw_player(x, y, self.__direction, self.__maze[x][y])
 
         if self.__pause > 0:
             self.__screen.refresh()
@@ -103,7 +95,7 @@ class Maze:
 
     def undraw_player(self):
         x, y = self.__x, self.__y
-        self.__screen.draw_empty(x, y, self.__btToVisited[self.__maze[x][y]])
+        self.__screen.draw_empty(x, y, self.__maze[x][y])
 
     def move(self):
         x, y = self.__x, self.__y
@@ -111,12 +103,12 @@ class Maze:
         ny = y + self.__dirToDelta[self.__direction][1]
 
         if self.in_bounds((nx, ny)) and self.block_free((nx, ny)):
-            if self.__maze[nx][ny] == 'e':
-                self.__maze[nx][ny] = 'v'
+            if self.__maze[nx][ny] == 0:
+                self.__maze[nx][ny] = 1
                 self.__visited += 1
                 self.__unvisited -= 1
-            elif self.__maze[nx][ny] == 'v':
-                self.__maze[nx][ny] = '2'
+            elif self.__maze[nx][ny] == 1:
+                self.__maze[nx][ny] = 2
                 self.__visited2 += 1
             self.undraw_player()
             self.__x, self.__y = nx, ny
@@ -168,17 +160,17 @@ class Maze:
         nx = x + self.__dirToDelta[self.__direction][0]
         ny = y + self.__dirToDelta[self.__direction][1]
 
-        return self.__maze[nx][ny] == 'e'
+        return self.__maze[nx][ny] == 0
 
     def frontOnceVisited(self):
         x, y = self.__x, self.__y
         nx = x + self.__dirToDelta[self.__direction][0]
         ny = y + self.__dirToDelta[self.__direction][1]
 
-        return self.__maze[nx][ny] == 'v'
+        return self.__maze[nx][ny] == 1
 
     def markTwiceVisited(self):
         x, y = self.__x, self.__y
-        self.__maze[x][y] = '2'
+        self.__maze[x][y] = 2
         self.__visited2 += 1
         self.draw_player()
