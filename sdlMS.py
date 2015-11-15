@@ -43,6 +43,7 @@ class sdlMazeScreen:
         self.__font = pygame.font.Font(None, 24)
         self.__font_height = self.__font.size('')[1]
         self.__font_xpos = (self.width() + 2) * self.__sprite_size[1]
+        self.__font_width = self.__screen_size[0]  - self.__font_xpos
 
         pygame.display.set_caption(self.__window_name)
         pygame.event.set_allowed(None)
@@ -59,56 +60,52 @@ class sdlMazeScreen:
         text = self.__font.render(text, 1, self.__font_color)
         textpos = text.get_rect()
         textpos.move_ip(self.__font_xpos, y * self.__font_height)
+        textpos.width = self.__font_width
+        textpos.right
         self.__screen.fill(self.__font_bgcolor, textpos)
         self.__screen.blit(text, textpos)
         return textpos
 
     def draw_stats_table(self):
-        textrect1 = self.render_stats_text("Maze", 0)
-        textrect = self.render_stats_text("Dimensions", 2)
-        textrect1.union_ip(textrect)
-        textrect = self.render_stats_text(" {} x {}".format(self.width(),
+        textrect = self.render_stats_text("Maze", 0)
+        self.render_stats_text("Dimensions", 2)
+        self.render_stats_text("{} x {}".format(self.width(),
             self.height()), 3)
+        self.render_stats_text("Walls", 5)
+        self.render_stats_text("Unvisited", 8)
+        self.render_stats_text("Visited", 11)
+        self.render_stats_text("2nd Vis.", 14)
+        self.render_stats_text("Bumps", 17)
+        textrect1 = self.render_stats_text("Moves", 20)
         textrect1.union_ip(textrect)
-        textrect = self.render_stats_text("Walls", 5)
-        textrect1.union_ip(textrect)
-        textrect = self.render_stats_text("Unvisited", 8)
-        textrect1.union_ip(textrect)
-        textrect = self.render_stats_text("Visited", 11)
-        textrect1.union_ip(textrect)
-        textrect = self.render_stats_text("2nd Vis.", 14)
-        textrect1.union_ip(textrect)
-        textrect = self.render_stats_text("Bumps", 17)
-        textrect1.union_ip(textrect)
-        textrect = self.render_stats_text("Moves", 20)
         pygame.display.update(textrect1)
 
     def draw_walls_stats(self, n):
-        textrect = self.render_stats_text("{:9}".format(n), 6)
+        textrect = self.render_stats_text("{}".format(n), 6)
         pygame.display.update(textrect)
 
     def draw_unvisited_stats(self, n):
-        textrect = self.render_stats_text("{:9}".format(n), 9)
+        textrect = self.render_stats_text("{}".format(n), 9)
         pygame.display.update(textrect)
 
     def draw_visited_stats(self, n):
-        textrect = self.render_stats_text("{:9}".format(n), 12)
+        textrect = self.render_stats_text("{}".format(n), 12)
         pygame.display.update(textrect)
 
     def draw_visited2_stats(self, n):
-        textrect = self.render_stats_text("{:9}".format(n), 15)
+        textrect = self.render_stats_text("{}".format(n), 15)
         pygame.display.update(textrect)
 
     def draw_bumps_stats(self, n):
-        textrect = self.render_stats_text("{:9}".format(n), 18)
+        textrect = self.render_stats_text("{}".format(n), 18)
         pygame.display.update(textrect)
 
     def draw_moves_stats(self, n):
-        textrect = self.render_stats_text("{:9}".format(n), 21)
+        textrect = self.render_stats_text("{}".format(n), 21)
         pygame.display.update(textrect)
 
     def width(self):
-        return int(self.__screen_size[0]/self.__sprite_size[0])-12
+        return int(self.__screen_size[0]/self.__sprite_size[0])-8
 
     def height(self):
         return int(self.__screen_size[1]/self.__sprite_size[1])-2
