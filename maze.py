@@ -16,6 +16,11 @@ class Maze:
         self.__width = width
         self.__height = height
         self.__maze = [[-1 for x in range(height)] for x in range(width)]
+
+        for y in range(height):
+            for x in range(width):
+                self.__screen.draw_wall(x, y)
+
         self.__walls = height*width - 1
         self.__moves = 0
         self.__pause = 0

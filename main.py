@@ -2,6 +2,8 @@
 
 import maze
 import cursesMS
+import sdlMS
+from random import randrange
 
 def maze_random_algo(m, blind = True):
     while m.unvisited() > 0:
@@ -109,7 +111,8 @@ def maze_backtrack_algo_it(m):
             m.turn(2)
 
 try:
-    screen = cursesMS.cursesMazeScreen()
+    screen = sdlMS.sdlMazeScreen()
+    #screen = cursesMS.cursesMazeScreen()
     m = maze.Maze(screen)
 
     m.setPause(0.001)
@@ -143,4 +146,5 @@ try:
             maze_random_algo(m, False)
             continue
 finally:
-    cursesMS.cursesMazeScreen.cleanup()
+    sdlMS.sdlMazeScreen.cleanup()
+    #cursesMS.cursesMazeScreen.cleanup()
