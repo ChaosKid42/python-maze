@@ -3,7 +3,7 @@ import pygame
 class sdlMazeScreen:
 
     __screen_size = (1024, 768)
-    __sprite_size = (16, 16)
+    __sprite_size = (32, 32)
     __window_name = "Maze in Python"
     __font_color = (255, 255, 255)
     __font_bgcolor = (0, 0, 0)
@@ -111,17 +111,17 @@ class sdlMazeScreen:
         return int(self.__screen_size[1]/self.__sprite_size[1])-2
 
     def draw_wall(self, x, y):
-        rect = (((x+1)*16, (y+1)*16), (self.__sprite_size))
+        rect = (((x+1)*self.__sprite_size[0], (y+1)*self.__sprite_size[1]), (self.__sprite_size))
         self.__screen.blit(self.__wall, rect)
         pygame.display.update(rect)
 
     def draw_empty(self, x, y, visited):
-        rect = (((x+1)*16, (y+1)*16), (self.__sprite_size))
+        rect = (((x+1)*self.__sprite_size[0], (y+1)*self.__sprite_size[1]), (self.__sprite_size))
         self.__screen.blit(self.__floor[visited], rect)
         pygame.display.update(rect)
 
     def draw_player(self, x, y, direction, visited):
-        rect = (((x+1)*16, (y+1)*16), (self.__sprite_size))
+        rect = (((x+1)*self.__sprite_size[0], (y+1)*self.__sprite_size[1]), (self.__sprite_size))
         self.__screen.blit(self.__player[direction], rect)
         pygame.display.update(rect)
 
