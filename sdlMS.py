@@ -26,10 +26,10 @@ class sdlMazeScreen:
         self.__screen = pygame.display.set_mode(self.__screen_size)
 
         self.__player = []
-        self.__player.append(pygame.image.load("player_up.png").convert())
-        self.__player.append(pygame.image.load("player_right.png").convert())
-        self.__player.append(pygame.image.load("player_down.png").convert())
-        self.__player.append(pygame.image.load("player_left.png").convert())
+        self.__player.append(pygame.image.load("player_up.jpg").convert())
+        self.__player.append(pygame.image.load("player_right.jpg").convert())
+        self.__player.append(pygame.image.load("player_down.jpg").convert())
+        self.__player.append(pygame.image.load("player_left.jpg").convert())
         self.__floor = []
         self.__floor.append(pygame.image.load("floor0.png").convert())
         self.__floor.append(pygame.image.load("floor1.png").convert())
